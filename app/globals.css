@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+
+  /* Marfim quente — fundo da app */
+  --color-cream-50: #faf7f1;
+  --color-cream-100: #f4eee1;
+  --color-cream-200: #e9ddc6;
+  --color-cream-300: #d9c8a6;
+
+  /* Terracota — cor principal da marca */
+  --color-brand-50: #fbf2eb;
+  --color-brand-100: #f6e1d2;
+  --color-brand-200: #ecc0a3;
+  --color-brand-300: #e0976c;
+  --color-brand-400: #d3703f;
+  --color-brand-500: #c25527;
+  --color-brand-600: #a8431d;
+  --color-brand-700: #86351a;
+  --color-brand-800: #6d2d1b;
+  --color-brand-900: #5a2719;
+
+  /* Dourado — destaques */
+  --color-gold-100: #f7ecd2;
+  --color-gold-200: #eeddab;
+  --color-gold-300: #e3c67e;
+  --color-gold-400: #d9ab3c;
+  --color-gold-500: #c99a2e;
+  --color-gold-600: #a87a22;
+
+  /* Espresso — texto e sidebar */
+  --color-ink-700: #4a3a32;
+  --color-ink-800: #332722;
+  --color-ink-900: #241a16;
+  --color-ink-950: #170f0c;
+
+  --animate-rise: rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-loader: loader 1.1s ease-in-out infinite;
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes loader {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(350%);
+    }
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-cream-50);
+  color: var(--color-ink-900);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-brand-200);
+}
+
+/* ————— FullCalendar: vestir com a marca ————— */
+.fc {
+  font-family: var(--font-sans);
+  --fc-border-color: var(--color-cream-200);
+  --fc-today-bg-color: var(--color-brand-50);
+  --fc-event-text-color: #fff;
+}
+.fc .fc-toolbar-title {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--color-ink-900);
+}
+.fc .fc-button-primary {
+  background: var(--color-ink-900);
+  border: none;
+  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.fc .fc-button-primary:hover {
+  background: var(--color-brand-600);
+}
+.fc .fc-button-primary:disabled {
+  background: var(--color-cream-200);
+  color: var(--color-ink-700);
+}
+.fc .fc-daygrid-day-number,
+.fc .fc-col-header-cell-cushion {
+  color: var(--color-ink-700);
+  text-decoration: none;
+  font-size: 0.8rem;
+}
+.fc-event {
+  border-radius: 8px;
+  border: none;
+  padding: 1px 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
