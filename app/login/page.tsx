@@ -4,6 +4,7 @@ import { AuthError } from "next-auth";
 import { CalendarCheck, Package, PartyPopper } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/primitives";
+import { PasswordInput } from "@/components/ui/password-input";
 
 const bullets = [
   { icon: Package, text: "Stock em tempo real, sem papel nem caderno" },
@@ -79,7 +80,7 @@ export default async function LoginPage({
           </div>
           <div>
             <Label htmlFor="password">Palavra-passe</Label>
-            <Input id="password" name="password" type="password" required autoComplete="current-password" />
+            <PasswordInput id="password" name="password" required autoComplete="current-password" />
           </div>
           {sp.error && (
             <p className="rounded-xl bg-red-50 px-3.5 py-2.5 text-sm font-medium text-red-700 ring-1 ring-inset ring-red-600/20">

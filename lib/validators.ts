@@ -51,4 +51,8 @@ export const userUpdateSchema = z.object({
   ativo: z.coerce.boolean(),
 });
 
+export const userPasswordSchema = z.object({
+  password: z.string().min(8, "Mínimo 8 caracteres"),
+});
+
 export type RentalInput = z.infer<typeof rentalSchema>;

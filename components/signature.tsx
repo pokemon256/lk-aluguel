@@ -1,7 +1,7 @@
 import { formatDataHora } from "@/lib/format";
 import type { AuditLog } from "@/lib/schema";
 
-const ACAO_LABEL: Record<string, string> = {
+export const ACAO_LABEL: Record<string, string> = {
   "material.criar": "criou o material",
   "material.editar": "editou o material",
   "cliente.criar": "registou o cliente",
@@ -17,6 +17,7 @@ const ACAO_LABEL: Record<string, string> = {
   "user.criar": "criou o utilizador",
   "user.editar": "editou o utilizador",
   "user.apagar": "apagou o utilizador",
+  "user.password": "redefiniu a palavra-passe",
 };
 
 /** Linha discreta "Criado por X · Editado por Y em …" */

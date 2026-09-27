@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { count, eq } from "drizzle-orm";
 import { requireDb } from "@/lib/db";
 import { users } from "@/lib/schema";
-import { userCreateSchema, userUpdateSchema } from "@/lib/validators";
+import { userCreateSchema, userPasswordSchema, userUpdateSchema } from "@/lib/validators";
 import { registarAuditoria, requireAdmin } from "@/lib/auth-helpers";
 
 export async function criarUtilizador(fd: FormData) {
@@ -75,6 +75,26 @@ export async function editarUtilizador(id: string, fd: FormData) {
     entidade: "users",
     entidadeId: id,
     detalhe: { antes: { nome: alvo.nome, role: alvo.role, ativo: alvo.ativo }, depois: v },
+  });
+  revalidatePath("/utilizadores");
+}
+
+export async function redefinirPassword(id: string, fd: FormData) {
+  const actor = await requireAdmin();
+  const v = userPasswordSchema.parse({ password: fd.get("password") });
+  const db = requireDb();
+  const [alvo] = await db.select().from(users).where(eq(users.id, id));
+  if (!alvo) throw new Error("Utilizador não encontrado.");
+  await db
+    .update(users)
+    .set({ passwordHash: await bcrypt.hash(v.password, 10), updatedById: actor.id })
+    .where(eq(users.id, id));
+  await registarAuditoria({
+    actor,
+    acao: "user.password",
+    entidade: "users",
+    entidadeId: id,
+    detalhe: { email: alvo.email },
   });
   revalidatePath("/utilizadores");
 }
