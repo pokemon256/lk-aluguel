@@ -21,6 +21,15 @@ for (const [key, entry] of Object.entries(MATERIAL_ICONS)) {
 }
 
 function QtyStepper({ value, max, onChange }: { value: number; max: number; onChange: (v: number) => void }) {
+  const [editando, setEditando] = useState(false);
+  const [texto, setTexto] = useState("");
+
+  function confirmar() {
+    setEditando(false);
+    const n = Math.floor(Number(texto));
+    if (Number.isFinite(n)) onChange(Math.min(max, Math.max(1, n)));
+  }
+
   return (
     <div className="flex items-center gap-1.5">
       <button
@@ -31,7 +40,35 @@ function QtyStepper({ value, max, onChange }: { value: number; max: number; onCh
       >
         <Minus className="size-4" />
       </button>
-      <span className="w-9 text-center text-sm font-bold tabular-nums">{value}</span>
+      {editando ? (
+        <input
+          autoFocus
+          value={texto}
+          inputMode="numeric"
+          aria-label="Quantidade"
+          onChange={(e) => setTexto(e.target.value.replace(/[^0-9]/g, ""))}
+          onFocus={(e) => e.target.select()}
+          onBlur={confirmar}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+            if (e.key === "Escape") setEditando(false);
+          }}
+          className="h-9 w-12 rounded-lg border border-brand-500 bg-white text-center text-sm font-bold tabular-nums outline-none ring-4 ring-brand-500/15"
+        />
+      ) : (
+        <button
+          type="button"
+          title="Tocar para editar"
+          aria-label={`Quantidade ${value}. Tocar para editar.`}
+          onClick={() => {
+            setTexto(String(value));
+            setEditando(true);
+          }}
+          className="grid h-9 w-12 place-items-center rounded-lg text-sm font-bold tabular-nums transition-colors hover:bg-ink-900/5 active:scale-95 cursor-pointer"
+        >
+          {value}
+        </button>
+      )}
       <button
         type="button"
         aria-label="Aumentar"
