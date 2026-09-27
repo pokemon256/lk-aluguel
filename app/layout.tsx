@@ -11,7 +11,13 @@ export const metadata: Metadata = {
   title: "LK Aluguel — Gestão de Decoração",
   description: "Inventário, alugueres, clientes e calendário para aluguer de materiais de decoração.",
   manifest: "/manifest.webmanifest",
-  icons: { apple: "/icon-192.png" },
+  icons: {
+    icon: [
+      { url: "/icon.png", sizes: "512x512", type: "image/png" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: "/icon-192.png",
+  },
   appleWebApp: { capable: true, title: "LK Aluguel", statusBarStyle: "default" },
 };
 

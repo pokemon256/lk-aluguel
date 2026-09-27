@@ -8,6 +8,7 @@ import { criarAluguer, editarAluguer } from "@/lib/actions";
 import { formatKz } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Card, Input, Label, Select } from "@/components/ui/primitives";
+import { NumberInput } from "@/components/ui/number-input";
 import { ClientQuickModal } from "@/components/client-quick-modal";
 import { Disp, Linha, MaterialPickerModal } from "@/components/material-picker-modal";
 import { cn } from "@/lib/utils";
@@ -227,24 +228,22 @@ function RentalForm({
                 </div>
                 <div>
                   <Label>Qtd</Label>
-                  <Input
-                    type="number"
+                  <NumberInput
                     min={1}
                     max={d?.disponivel ?? m.quantidadeTotal}
                     value={l.quantidade}
-                    onChange={(e) =>
-                      setLinhas(linhas.map((x, j) => (j === i ? { ...x, quantidade: Number(e.target.value) } : x)))
+                    onChange={(n) =>
+                      setLinhas(linhas.map((x, j) => (j === i ? { ...x, quantidade: n } : x)))
                     }
                   />
                 </div>
                 <div>
                   <Label>Preço un. (Kz)</Label>
-                  <Input
-                    type="number"
+                  <NumberInput
                     min={0}
                     value={l.precoAcordado}
-                    onChange={(e) =>
-                      setLinhas(linhas.map((x, j) => (j === i ? { ...x, precoAcordado: Number(e.target.value) } : x)))
+                    onChange={(n) =>
+                      setLinhas(linhas.map((x, j) => (j === i ? { ...x, precoAcordado: n } : x)))
                     }
                   />
                 </div>
@@ -286,11 +285,11 @@ function RentalForm({
         <div className="mt-3 grid gap-3 md:grid-cols-3">
           <div>
             <Label>Caução (Kz)</Label>
-            <Input type="number" min={0} value={caucao} onChange={(e) => setCaucao(Number(e.target.value))} />
+            <NumberInput min={0} value={caucao} onChange={setCaucao} />
           </div>
           <div>
             <Label>Valor já pago (Kz)</Label>
-            <Input type="number" min={0} value={pago} onChange={(e) => setPago(Number(e.target.value))} />
+            <NumberInput min={0} value={pago} onChange={setPago} />
           </div>
           <div>
             <Label>Observações</Label>
