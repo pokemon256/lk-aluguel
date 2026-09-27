@@ -4,8 +4,10 @@ import type { AuditLog } from "@/lib/schema";
 export const ACAO_LABEL: Record<string, string> = {
   "material.criar": "criou o material",
   "material.editar": "editou o material",
+  "material.apagar": "apagou o material",
   "cliente.criar": "registou o cliente",
   "cliente.editar": "editou o cliente",
+  "cliente.apagar": "apagou o cliente",
   "aluguer.criar": "criou o aluguer",
   "aluguer.editar": "editou a marcação",
   "aluguer.pagamento": "registou pagamento",

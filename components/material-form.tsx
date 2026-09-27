@@ -10,7 +10,7 @@ import { Modal } from "@/components/modal";
 
 const CATEGORIAS = ["Mobiliário", "Têxteis", "Louças", "Painéis", "Decoração", "Estruturas", "Geral"];
 
-function Fields({ material }: { material?: Material }) {
+export function MaterialFields({ material }: { material?: Material }) {
   return (
     <>
       <div className="col-span-2">
@@ -40,6 +40,31 @@ function Fields({ material }: { material?: Material }) {
         <Label>Ícone</Label>
         <IconPicker defaultValue={material?.icone} />
       </div>
+      <div className="col-span-2">
+        <Label htmlFor="mat-notas">Notas</Label>
+        <textarea
+          id="mat-notas"
+          name="notas"
+          rows={2}
+          maxLength={500}
+          placeholder="Ex: 4 com defeito ligeiro, comprar mais em Novembro…"
+          defaultValue={material?.notas ?? ""}
+          className="w-full rounded-xl border border-ink-900/15 bg-cream-50/50 px-3.5 py-2.5 text-sm text-ink-900 placeholder:text-ink-800/35 outline-none transition-all focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-500/15"
+        />
+      </div>
+      {material && (
+        <div className="col-span-2">
+          <label className="flex h-11 items-center gap-2 rounded-xl border border-ink-900/15 px-3 text-sm text-ink-900">
+            <input
+              type="checkbox"
+              name="ativo"
+              defaultChecked={material.ativo}
+              className="size-4 accent-brand-600"
+            />
+            Visível no catálogo (desmarca para desativar sem apagar)
+          </label>
+        </div>
+      )}
       <datalist id="material-categorias">
         {CATEGORIAS.map((c) => (
           <option key={c} value={c} />
@@ -58,7 +83,7 @@ export function MaterialCreateButton() {
       </Button>
       <Modal open={open} onClose={() => setOpen(false)} title="Novo material" subtitle="Adiciona um artigo ao inventário.">
         <form action={criarMaterial} onSubmit={() => setOpen(false)} className="grid grid-cols-2 gap-3">
-          <Fields />
+          <MaterialFields />
           <div className="col-span-2 mt-1">
             <Button type="submit" className="w-full" size="lg">
               Guardar material
@@ -83,7 +108,7 @@ export function MaterialEditButton({ material }: { material: Material }) {
       </button>
       <Modal open={open} onClose={() => setOpen(false)} title="Editar material" subtitle={material.nome}>
         <form action={editarMaterial.bind(null, material.id)} onSubmit={() => setOpen(false)} className="grid grid-cols-2 gap-3">
-          <Fields material={material} />
+          <MaterialFields material={material} />
           <div className="col-span-2 mt-1 flex gap-2">
             <Button type="submit" className="flex-1" size="lg">
               Guardar alterações

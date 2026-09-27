@@ -8,6 +8,8 @@ export const materialSchema = z.object({
   origem: z.enum(["PROPRIO", "TERCEIRIZADO"]).default("PROPRIO"),
   fornecedorNome: z.string().optional().nullable(),
   icone: z.string().max(40).optional().nullable(),
+  notas: z.string().max(500).optional().nullable(),
+  ativo: z.coerce.boolean().default(true),
 });
 
 export const customerSchema = z.object({

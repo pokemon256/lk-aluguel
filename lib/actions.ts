@@ -12,13 +12,14 @@ import { notifyAllUsers } from "@/lib/notify";
 
 export async function criarMaterial(fd: FormData) {
   const actor = await requireUser();
-  const v = materialSchema.parse(Object.fromEntries(fd));
+  const v = parseMaterial(fd, true);
   const db = requireDb();
   const [m] = await db
     .insert(materials)
     .values({
       ...v,
       fornecedorNome: v.fornecedorNome || null,
+      notas: v.notas?.trim() ? v.notas.trim() : null,
       icone: v.icone && v.icone in MATERIAL_ICONS ? v.icone : null,
       createdById: actor.id,
       updatedById: actor.id,
@@ -34,15 +35,30 @@ export async function criarMaterial(fd: FormData) {
   revalidatePath("/materiais");
 }
 
+/** Checkbox "ativo" não vem no FormData quando desmarcada: trata em falta como fallback. */
+function parseMaterial(fd: FormData, ativoFallback: boolean) {
+  const raw = Object.fromEntries(fd);
+  return materialSchema.parse({
+    ...raw,
+    ativo:
+      raw.ativo === undefined
+        ? ativoFallback
+        : raw.ativo === "on" || raw.ativo === "true",
+  });
+}
+
 export async function editarMaterial(id: string, fd: FormData) {
   const actor = await requireUser();
-  const v = materialSchema.parse(Object.fromEntries(fd));
   const db = requireDb();
+  const [atual] = await db.select().from(materials).where(eq(materials.id, id));
+  if (!atual) throw new Error("Material não encontrado.");
+  const v = parseMaterial(fd, atual.ativo);
   await db
     .update(materials)
     .set({
       ...v,
       fornecedorNome: v.fornecedorNome || null,
+      notas: v.notas?.trim() ? v.notas.trim() : null,
       icone: v.icone && v.icone in MATERIAL_ICONS ? v.icone : null,
       updatedById: actor.id,
       updatedAt: new Date(),
@@ -54,6 +70,29 @@ export async function editarMaterial(id: string, fd: FormData) {
     entidade: "materials",
     entidadeId: id,
     detalhe: { nome: v.nome },
+  });
+  revalidatePath("/materiais");
+}
+
+export async function apagarMaterial(id: string) {
+  const actor = await requireUser();
+  const db = requireDb();
+  const [m] = await db.select().from(materials).where(eq(materials.id, id));
+  if (!m) throw new Error("Material não encontrado.");
+  const usos = await db
+    .select({ rentalId: rentalItems.rentalId })
+    .from(rentalItems)
+    .where(eq(rentalItems.materialId, id))
+    .limit(1);
+  if (usos.length > 0)
+    throw new Error("Este material está usado em alugueres e não pode ser apagado. Desativa-o em vez disso.");
+  await db.delete(materials).where(eq(materials.id, id));
+  await registarAuditoria({
+    actor,
+    acao: "material.apagar",
+    entidade: "materials",
+    entidadeId: id,
+    detalhe: { nome: m.nome },
   });
   revalidatePath("/materiais");
 }
@@ -104,6 +143,30 @@ export async function editarCliente(id: string, fd: FormData) {
     entidade: "customers",
     entidadeId: id,
     detalhe: { nome: v.nome },
+  });
+  revalidatePath("/clientes");
+  revalidatePath(`/clientes/${id}`);
+}
+
+export async function apagarCliente(id: string) {
+  const actor = await requireUser();
+  const db = requireDb();
+  const [c] = await db.select().from(customers).where(eq(customers.id, id));
+  if (!c) throw new Error("Cliente não encontrado.");
+  const alugueres = await db
+    .select({ id: rentals.id })
+    .from(rentals)
+    .where(eq(rentals.customerId, id))
+    .limit(1);
+  if (alugueres.length > 0)
+    throw new Error("Este cliente tem alugueres registados e não pode ser apagado.");
+  await db.delete(customers).where(eq(customers.id, id));
+  await registarAuditoria({
+    actor,
+    acao: "cliente.apagar",
+    entidade: "customers",
+    entidadeId: id,
+    detalhe: { nome: c.nome, telefone: c.telefone },
   });
   revalidatePath("/clientes");
 }

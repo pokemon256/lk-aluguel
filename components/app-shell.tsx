@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RouteLoader } from "@/components/route-loader";
+import { InstallAppButton } from "@/components/install-app";
 import { signOut } from "next-auth/react";
 import { Bell } from "@/components/bell";
 import { PushSync } from "@/components/push-toggle";
@@ -150,6 +151,7 @@ export function AppShell({
               </span>
             </div>
           )}
+          <InstallAppButton variant="menu" />
           <button
             type="button"
             onClick={() => signOut({ callbackUrl: "/login" })}
@@ -255,6 +257,7 @@ export function AppShell({
                   </Link>
                 );
               })}
+              <InstallAppButton variant="menulight" />
               <button
                 type="button"
                 onClick={() => signOut({ callbackUrl: "/login" })}

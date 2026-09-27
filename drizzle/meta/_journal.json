@@ -29,6 +29,13 @@
       "when": 1790510858871,
       "tag": "0003_low_demogoblin",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790523142777,
+      "tag": "0004_tidy_squirrel_girl",
+      "breakpoints": true
     }
   ]
 }

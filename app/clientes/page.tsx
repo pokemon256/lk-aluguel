@@ -1,19 +1,15 @@
-import Link from "next/link";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { Phone } from "lucide-react";
+import { desc } from "drizzle-orm";
+import { CalendarCheck, CircleDollarSign, Users, Wallet } from "lucide-react";
+import { requireDb } from "@/lib/db";
+import { auditLogs, rentals } from "@/lib/schema";
 import { loadCustomers, loadUserNames } from "@/lib/data";
-import { ClientCreateButton, ClientEditButton } from "@/components/client-form";
+import { ClientCreateButton } from "@/components/client-form";
+import { ClientsClient, type ResumoCliente } from "@/components/client-details";
+import type { AuditLog } from "@/lib/schema";
 import { Card, EmptyState, PageHeader } from "@/components/ui/primitives";
-
-function iniciais(nome: string) {
-  return nome
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p[0]!.toUpperCase())
-    .join("");
-}
+import { formatKz } from "@/lib/format";
 
 export default async function ClientesPage() {
   const s = await auth();
@@ -25,47 +21,97 @@ export default async function ClientesPage() {
         Falta <code>DATABASE_URL</code>. Ver <code>.env.example</code>.
       </Card>
     );
-  const nomes = await loadUserNames();
+  const db = requireDb();
+  const [nomesMap, rents, logs] = await Promise.all([
+    loadUserNames(),
+    db.select().from(rentals),
+    db.select().from(auditLogs).orderBy(desc(auditLogs.at)).limit(300),
+  ]);
+  const names: Record<string, string> = Object.fromEntries(nomesMap);
+
+  const porCliente = new Map<string, typeof rents>();
+  for (const r of rents) {
+    const arr = porCliente.get(r.customerId) ?? [];
+    arr.push(r);
+    porCliente.set(r.customerId, arr);
+  }
+
+  const resumos: Record<string, ResumoCliente> = Object.fromEntries(
+    lista.map((c) => {
+      const rs = (porCliente.get(c.id) ?? [])
+        .filter((r) => r.status !== "CANCELADO")
+        .sort((a, b) => +b.dataEvento - +a.dataEvento);
+      const total = rs.reduce((t, r) => t + r.valorTotal, 0);
+      const pago = rs.reduce((t, r) => t + r.valorPago, 0);
+      return [
+        c.id,
+        {
+          eventos: rs.length,
+          total,
+          emDivida: total - pago,
+          temAtivos: rs.some((r) =>
+            ["PENDENTE", "ATIVO", "ATRASADO"].includes(r.status)
+          ),
+          recentes: rs.slice(0, 5).map((r) => ({
+            id: r.id,
+            data: r.dataEvento,
+            status: r.status,
+            total: r.valorTotal,
+          })),
+        },
+      ];
+    })
+  );
+
+  const historicos: Record<string, AuditLog[]> = Object.fromEntries(
+    lista.map((c) => [c.id, logs.filter((l) => l.entidade === "customers" && l.entidadeId === c.id).slice(0, 10)])
+  );
+
+  const comAtivos = lista.filter((c) => resumos[c.id]?.temAtivos).length;
+  const divida = Object.values(resumos).reduce((t, r) => t + r.emDivida, 0);
+  const inicioMes = new Date();
+  inicioMes.setDate(1);
+  inicioMes.setHours(0, 0, 0, 0);
+  const novos = lista.filter((c) => c.createdAt >= inicioMes).length;
+  const stats = [
+    { icon: Users, label: "Clientes", value: String(lista.length), tint: "bg-brand-100 text-brand-700" },
+    { icon: CalendarCheck, label: "Com eventos ativos", value: String(comAtivos), tint: "bg-sky-100 text-sky-700" },
+    { icon: Wallet, label: "Por receber", value: formatKz(divida), tint: "bg-gold-100 text-gold-600" },
+    { icon: CircleDollarSign, label: "Novos este mês", value: String(novos), tint: "bg-emerald-100 text-emerald-700" },
+  ];
+
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
         title="Clientes"
-        subtitle={`${lista.length} clientes registados`}
+        subtitle="Clica num cliente para ver resumo, histórico, editar ou apagar."
         action={<ClientCreateButton />}
       />
+
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        {stats.map((st, i) => (
+          <Card
+            key={st.label}
+            className="flex items-center gap-3 animate-rise"
+            style={{ animationDelay: `${i * 40}ms` }}
+          >
+            <span className={`grid size-10 shrink-0 place-items-center rounded-2xl ${st.tint}`}>
+              <st.icon className="size-5" />
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate font-display text-lg font-semibold text-ink-950">
+                {st.value}
+              </span>
+              <span className="block text-xs font-medium text-ink-700/60">{st.label}</span>
+            </span>
+          </Card>
+        ))}
+      </div>
 
       {lista.length === 0 ? (
         <EmptyState title="Ainda sem clientes" hint="Carrega em «Novo cliente» para registar o primeiro." />
       ) : (
-        <div className="grid gap-3 md:grid-cols-2">
-          {lista.map((c, i) => (
-            <Card key={c.id} className="flex items-center gap-3.5 animate-rise" style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}>
-              <Link href={`/clientes/${c.id}`} className="flex min-w-0 flex-1 items-center gap-3.5">
-                <span className="grid size-12 shrink-0 place-items-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 font-display text-base font-bold text-white">
-                  {iniciais(c.nome)}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-semibold text-ink-950">{c.nome}</p>
-                  <span className="mt-0.5 flex items-center gap-1.5 text-[13px] font-medium text-brand-700">
-                    <Phone className="size-3.5" /> {c.telefone}
-                  </span>
-                  {c.notas && <p className="mt-0.5 truncate text-xs text-ink-700/60">{c.notas}</p>}
-                  {c.createdById && (
-                    <p className="mt-0.5 text-[11px] text-ink-700/55">
-                      Registado por {nomes.get(c.createdById) ?? "—"}
-                    </p>
-                  )}
-                </div>
-              </Link>
-              {c.bi && (
-                <span className="hidden shrink-0 rounded-lg bg-cream-100 px-2 py-1 text-[11px] font-semibold text-ink-700 sm:block">
-                  BI {c.bi}
-                </span>
-              )}
-              <ClientEditButton customer={c} />
-            </Card>
-          ))}
-        </div>
+        <ClientsClient lista={lista} names={names} resumos={resumos} historicos={historicos} />
       )}
     </div>
   );

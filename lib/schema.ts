@@ -60,6 +60,7 @@ export const materials = pgTable("materials", {
   icone: text("icone"), // chave do catálogo em lib/material-icons.ts
   origem: materialOrigemEnum("origem").notNull().default("PROPRIO"),
   fornecedorNome: text("fornecedor_nome"),
+  notas: text("notas"),
   ativo: boolean("ativo").notNull().default(true),
   createdById: uuid("created_by_id").references(() => users.id, { onDelete: "set null" }),
   updatedById: uuid("updated_by_id").references(() => users.id, { onDelete: "set null" }),

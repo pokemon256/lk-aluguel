@@ -5,6 +5,7 @@ import { CalendarCheck, Package, PartyPopper } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/primitives";
 import { PasswordInput } from "@/components/ui/password-input";
+import { InstallAppButton } from "@/components/install-app";
 
 const bullets = [
   { icon: Package, text: "Stock em tempo real, sem papel nem caderno" },
@@ -91,6 +92,12 @@ export default async function LoginPage({
             Entrar
           </Button>
         </form>
+        <div className="mt-4 border-t border-ink-900/10 pt-4">
+          <InstallAppButton />
+          <p className="mt-2 text-center text-xs text-ink-700/55">
+            Instala para acesso rápido e consulta offline.
+          </p>
+        </div>
       </div>
     </div>
   );

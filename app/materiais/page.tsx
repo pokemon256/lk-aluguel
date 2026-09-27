@@ -1,11 +1,15 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import { desc } from "drizzle-orm";
+import { Boxes, Layers, PiggyBank, Truck } from "lucide-react";
+import { requireDb } from "@/lib/db";
+import { auditLogs, customers, rentalItems, rentals } from "@/lib/schema";
 import { loadMaterials, loadUserNames } from "@/lib/data";
-import { materialIcon } from "@/lib/material-icons";
-import { MaterialCreateButton, MaterialEditButton } from "@/components/material-form";
-import { Badge, Card, EmptyState, PageHeader } from "@/components/ui/primitives";
+import { MaterialCreateButton } from "@/components/material-form";
+import { MaterialsClient, type UsoMaterial } from "@/components/material-details";
+import type { AuditLog } from "@/lib/schema";
+import { Card, EmptyState, PageHeader } from "@/components/ui/primitives";
 import { formatKz } from "@/lib/format";
-import { cn } from "@/lib/utils";
 
 const CATEGORY_TINT: Record<string, string> = {
   Mobiliário: "bg-brand-100 text-brand-700",
@@ -26,49 +30,89 @@ export default async function MateriaisPage() {
         Falta <code>DATABASE_URL</code>. Ver <code>.env.example</code>.
       </Card>
     );
-  const nomes = await loadUserNames();
+  const db = requireDb();
+  const [nomesMap, items, rents, custs, logs] = await Promise.all([
+    loadUserNames(),
+    db.select().from(rentalItems),
+    db.select().from(rentals),
+    db.select().from(customers),
+    db.select().from(auditLogs).orderBy(desc(auditLogs.at)).limit(300),
+  ]);
+  const names: Record<string, string> = Object.fromEntries(nomesMap);
+  const nomeCli = new Map(custs.map((c) => [c.id, c.nome]));
+  const rentalById = new Map(rents.map((r) => [r.id, r]));
+
+  const usos: Record<string, UsoMaterial> = Object.fromEntries(
+    lista.map((m) => {
+      const itemsDoMat = items.filter((i) => i.materialId === m.id);
+      const rentalIds = [...new Set(itemsDoMat.map((i) => i.rentalId))];
+      const recentes = rentalIds
+        .map((id) => rentalById.get(id))
+        .filter((r) => r !== undefined)
+        .sort((a, b) => +b.dataEvento - +a.dataEvento)
+        .slice(0, 5)
+        .map((r) => ({
+          id: r.id,
+          cliente: nomeCli.get(r.customerId) ?? "—",
+          data: r.dataEvento,
+          status: r.status,
+        }));
+      return [m.id, { total: rentalIds.length, recentes }];
+    })
+  );
+
+  const historicos: Record<string, AuditLog[]> = Object.fromEntries(
+    lista.map((m) => [m.id, logs.filter((l) => l.entidade === "materials" && l.entidadeId === m.id).slice(0, 10)])
+  );
+
+  const unidades = lista.reduce((t, m) => t + m.quantidadeTotal, 0);
+  const valor = lista.reduce((t, m) => t + m.quantidadeTotal * m.precoUnitario, 0);
+  const terceiros = lista.filter((m) => m.origem === "TERCEIRIZADO").length;
+  const stats = [
+    { icon: Layers, label: "Artigos", value: String(lista.length) },
+    { icon: Boxes, label: "Unidades", value: String(unidades) },
+    { icon: PiggyBank, label: "Valor em stock", value: formatKz(valor) },
+    { icon: Truck, label: "Terceirizados", value: String(terceiros) },
+  ];
+
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
         title="Materiais"
-        subtitle={`${lista.length} artigos no inventário`}
+        subtitle="Clica num artigo para ver detalhes, stock, histórico, editar ou apagar."
         action={<MaterialCreateButton />}
       />
+
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        {stats.map((st, i) => (
+          <Card
+            key={st.label}
+            className="flex items-center gap-3 animate-rise"
+            style={{ animationDelay: `${i * 40}ms` }}
+          >
+            <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-brand-100 text-brand-700">
+              <st.icon className="size-5" />
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate font-display text-lg font-semibold text-ink-950">
+                {st.value}
+              </span>
+              <span className="block text-xs font-medium text-ink-700/60">{st.label}</span>
+            </span>
+          </Card>
+        ))}
+      </div>
 
       {lista.length === 0 ? (
         <EmptyState title="Ainda sem materiais" hint="Adiciona o primeiro artigo no formulário acima." />
       ) : (
-        <div className="grid gap-3 md:grid-cols-2">
-          {lista.map((m, i) => {
-            const Icon = materialIcon(m.icone);
-            return (
-              <Card key={m.id} className="flex items-center gap-3.5 animate-rise" style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}>
-                <span className={cn("grid size-12 shrink-0 place-items-center rounded-2xl", CATEGORY_TINT[m.categoria] ?? "bg-cream-100 text-ink-700")}>
-                  <Icon className="size-5" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-semibold text-ink-950">{m.nome}</p>
-                  <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-ink-700/60">
-                    <Badge className="bg-cream-100 text-ink-700 ring-ink-900/10">{m.categoria}</Badge>
-                    {m.origem === "TERCEIRIZADO" && (
-                      <Badge className="bg-gold-100 text-gold-600 ring-gold-500/30">
-                        Terceiro{m.fornecedorNome ? ` · ${m.fornecedorNome}` : ""}
-                      </Badge>
-                    )}
-                    <span>Stock: <strong className="text-ink-900">{m.quantidadeTotal}</strong></span>
-                    {m.createdById && (
-                      <span>· por {nomes.get(m.createdById) ?? "—"}</span>
-                    )}
-                  </p>
-                </div>
-                <p className="shrink-0 font-display text-lg font-semibold text-ink-950">
-                  {formatKz(m.precoUnitario)}
-                </p>
-                <MaterialEditButton material={m} />
-              </Card>
-            );
-          })}
-        </div>
+        <MaterialsClient
+          lista={lista}
+          names={names}
+          usos={usos}
+          historicos={historicos}
+          tints={CATEGORY_TINT}
+        />
       )}
     </div>
   );
