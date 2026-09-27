@@ -55,6 +55,15 @@ function ClientSheet({
 }) {
   const [aConfirmar, setAConfirmar] = useState(false);
   const [aEditar, setAEditar] = useState(false);
+  const [erroApagar, setErroApagar] = useState<string | null>(null);
+
+  async function onApagar(e: React.FormEvent) {
+    e.preventDefault();
+    setErroApagar(null);
+    const r = await apagarCliente(customer.id);
+    if (r.ok) onClose();
+    else setErroApagar(r.erro);
+  }
 
   return (
     <RightSheet open onClose={onClose} title={customer.nome} subtitle={customer.telefone}>
@@ -96,11 +105,16 @@ function ClientSheet({
               <Trash2 className="size-4" /> Eliminar
             </Button>
           ) : (
-            <form action={apagarCliente.bind(null, customer.id)} className="col-span-2 rounded-2xl border border-red-600/25 bg-red-50/60 p-3">
+            <form onSubmit={onApagar} className="col-span-2 rounded-2xl border border-red-600/25 bg-red-50/60 p-3">
               <p className="text-[13px] text-red-800">
                 Apagar <strong>{customer.nome}</strong> para sempre?
                 {resumo.eventos > 0 && " Tem alugueres — a eliminação será bloqueada."}
               </p>
+              {erroApagar && (
+                <p className="mt-2 rounded-xl bg-red-600/10 px-3 py-2 text-[13px] font-medium text-red-700 ring-1 ring-inset ring-red-600/25">
+                  {erroApagar}
+                </p>
+              )}
               <div className="mt-2 flex gap-2">
                 <Button type="submit" variant="danger" className="flex-1">
                   Sim, apagar

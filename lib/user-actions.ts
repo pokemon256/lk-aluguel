@@ -99,23 +99,30 @@ export async function redefinirPassword(id: string, fd: FormData) {
   revalidatePath("/utilizadores");
 }
 
-export async function apagarUtilizador(id: string) {
-  const actor = await requireAdmin();
-  if (id === actor.id) throw new Error("Não podes apagar a tua própria conta.");
-  const db = requireDb();
-  const [alvo] = await db.select().from(users).where(eq(users.id, id));
-  if (!alvo) throw new Error("Utilizador não encontrado.");
-  if (alvo.role === "ADMIN") {
-    const admins = await db.select().from(users).where(eq(users.role, "ADMIN"));
-    if (admins.length <= 1) throw new Error("Não podes apagar o último ADMIN.");
+export async function apagarUtilizador(
+  id: string
+): Promise<{ ok: true } | { ok: false; erro: string }> {
+  try {
+    const actor = await requireAdmin();
+    if (id === actor.id) return { ok: false, erro: "Não podes apagar a tua própria conta." };
+    const db = requireDb();
+    const [alvo] = await db.select().from(users).where(eq(users.id, id));
+    if (!alvo) return { ok: false, erro: "Utilizador não encontrado." };
+    if (alvo.role === "ADMIN") {
+      const admins = await db.select().from(users).where(eq(users.role, "ADMIN"));
+      if (admins.length <= 1) return { ok: false, erro: "Não podes apagar o último ADMIN." };
+    }
+    await db.delete(users).where(eq(users.id, id));
+    await registarAuditoria({
+      actor,
+      acao: "user.apagar",
+      entidade: "users",
+      entidadeId: id,
+      detalhe: { email: alvo.email, nome: alvo.nome, role: alvo.role },
+    });
+    revalidatePath("/utilizadores");
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, erro: e instanceof Error ? e.message : "Não foi possível apagar." };
   }
-  await db.delete(users).where(eq(users.id, id));
-  await registarAuditoria({
-    actor,
-    acao: "user.apagar",
-    entidade: "users",
-    entidadeId: id,
-    detalhe: { email: alvo.email, nome: alvo.nome, role: alvo.role },
-  });
-  revalidatePath("/utilizadores");
 }

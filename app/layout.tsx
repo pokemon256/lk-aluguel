@@ -34,7 +34,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     : null;
   return (
     <html lang="pt-AO" className="h-full">
-      <body className={`${inter.variable} ${fraunces.variable} min-h-full antialiased`}>
+      <body
+        className={`${inter.variable} ${fraunces.variable} min-h-full antialiased`}
+        suppressHydrationWarning
+      >
         {/* Brilho festivo de fundo */}
         <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
           <div className="absolute -top-32 left-1/2 h-96 w-[42rem] -translate-x-1/2 rounded-full bg-brand-200/50 blur-3xl" />

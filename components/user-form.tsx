@@ -150,7 +150,16 @@ function UserSheet({
 }) {
   const [aConfirmar, setAConfirmar] = useState(false);
   const [aEditar, setAEditar] = useState(false);
+  const [erroApagar, setErroApagar] = useState<string | null>(null);
   const isSelf = user.id === meId;
+
+  async function onApagar(e: React.FormEvent) {
+    e.preventDefault();
+    setErroApagar(null);
+    const r = await apagarUtilizador(user.id);
+    if (r.ok) onClose();
+    else setErroApagar(r.erro);
+  }
 
   return (
     <RightSheet open onClose={onClose} title={user.nome} subtitle={user.email}>
@@ -188,11 +197,16 @@ function UserSheet({
               <Trash2 className="size-4" /> Eliminar
             </Button>
           ) : !isSelf ? (
-            <form action={apagarUtilizador.bind(null, user.id)} className="col-span-2 rounded-2xl border border-red-600/25 bg-red-50/60 p-3">
+            <form onSubmit={onApagar} className="col-span-2 rounded-2xl border border-red-600/25 bg-red-50/60 p-3">
               <p className="text-[13px] text-red-800">
                 Apagar <strong>{user.nome}</strong>? O histórico assinado por ele é
                 preservado (autor passa a vazio).
               </p>
+              {erroApagar && (
+                <p className="mt-2 rounded-xl bg-red-600/10 px-3 py-2 text-[13px] font-medium text-red-700 ring-1 ring-inset ring-red-600/25">
+                  {erroApagar}
+                </p>
+              )}
               <div className="mt-2 flex gap-2">
                 <Button type="submit" variant="danger" className="flex-1">
                   Sim, apagar

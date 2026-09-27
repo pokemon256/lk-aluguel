@@ -74,27 +74,37 @@ export async function editarMaterial(id: string, fd: FormData) {
   revalidatePath("/materiais");
 }
 
-export async function apagarMaterial(id: string) {
-  const actor = await requireUser();
-  const db = requireDb();
-  const [m] = await db.select().from(materials).where(eq(materials.id, id));
-  if (!m) throw new Error("Material não encontrado.");
-  const usos = await db
-    .select({ rentalId: rentalItems.rentalId })
-    .from(rentalItems)
-    .where(eq(rentalItems.materialId, id))
-    .limit(1);
-  if (usos.length > 0)
-    throw new Error("Este material está usado em alugueres e não pode ser apagado. Desativa-o em vez disso.");
-  await db.delete(materials).where(eq(materials.id, id));
-  await registarAuditoria({
-    actor,
-    acao: "material.apagar",
-    entidade: "materials",
-    entidadeId: id,
-    detalhe: { nome: m.nome },
-  });
-  revalidatePath("/materiais");
+export async function apagarMaterial(
+  id: string
+): Promise<{ ok: true } | { ok: false; erro: string }> {
+  try {
+    const actor = await requireUser();
+    const db = requireDb();
+    const [m] = await db.select().from(materials).where(eq(materials.id, id));
+    if (!m) return { ok: false, erro: "Material não encontrado." };
+    const usos = await db
+      .select({ rentalId: rentalItems.rentalId })
+      .from(rentalItems)
+      .where(eq(rentalItems.materialId, id))
+      .limit(1);
+    if (usos.length > 0)
+      return {
+        ok: false,
+        erro: "Este material está usado em alugueres e não pode ser apagado. Desativa-o em vez disso.",
+      };
+    await db.delete(materials).where(eq(materials.id, id));
+    await registarAuditoria({
+      actor,
+      acao: "material.apagar",
+      entidade: "materials",
+      entidadeId: id,
+      detalhe: { nome: m.nome },
+    });
+    revalidatePath("/materiais");
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, erro: e instanceof Error ? e.message : "Não foi possível apagar." };
+  }
 }
 
 export async function criarCliente(fd: FormData) {
@@ -148,27 +158,34 @@ export async function editarCliente(id: string, fd: FormData) {
   revalidatePath(`/clientes/${id}`);
 }
 
-export async function apagarCliente(id: string) {
-  const actor = await requireUser();
-  const db = requireDb();
-  const [c] = await db.select().from(customers).where(eq(customers.id, id));
-  if (!c) throw new Error("Cliente não encontrado.");
-  const alugueres = await db
-    .select({ id: rentals.id })
-    .from(rentals)
-    .where(eq(rentals.customerId, id))
-    .limit(1);
-  if (alugueres.length > 0)
-    throw new Error("Este cliente tem alugueres registados e não pode ser apagado.");
-  await db.delete(customers).where(eq(customers.id, id));
-  await registarAuditoria({
-    actor,
-    acao: "cliente.apagar",
-    entidade: "customers",
-    entidadeId: id,
-    detalhe: { nome: c.nome, telefone: c.telefone },
-  });
-  revalidatePath("/clientes");
+export async function apagarCliente(
+  id: string
+): Promise<{ ok: true } | { ok: false; erro: string }> {
+  try {
+    const actor = await requireUser();
+    const db = requireDb();
+    const [c] = await db.select().from(customers).where(eq(customers.id, id));
+    if (!c) return { ok: false, erro: "Cliente não encontrado." };
+    const alugueres = await db
+      .select({ id: rentals.id })
+      .from(rentals)
+      .where(eq(rentals.customerId, id))
+      .limit(1);
+    if (alugueres.length > 0)
+      return { ok: false, erro: "Este cliente tem alugueres registados e não pode ser apagado." };
+    await db.delete(customers).where(eq(customers.id, id));
+    await registarAuditoria({
+      actor,
+      acao: "cliente.apagar",
+      entidade: "customers",
+      entidadeId: id,
+      detalhe: { nome: c.nome, telefone: c.telefone },
+    });
+    revalidatePath("/clientes");
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, erro: e instanceof Error ? e.message : "Não foi possível apagar." };
+  }
 }
 
 /** Criação rápida usada no wizard de aluguer: devolve o cliente criado. */
