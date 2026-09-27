@@ -149,6 +149,7 @@ function UserSheet({
   onClose: () => void;
 }) {
   const [aConfirmar, setAConfirmar] = useState(false);
+  const [aEditar, setAEditar] = useState(false);
   const isSelf = user.id === meId;
 
   return (
@@ -172,6 +173,58 @@ function UserSheet({
             </p>
           </div>
         </div>
+
+        {/* Editar / Eliminar */}
+        <div className="grid grid-cols-2 gap-2">
+          <Button variant="outline" onClick={() => setAEditar(true)}>
+            <Pencil className="size-4" /> Editar
+          </Button>
+          {!isSelf && !aConfirmar ? (
+            <Button
+              variant="outline"
+              onClick={() => setAConfirmar(true)}
+              className="!border-red-600/30 !text-red-700 hover:!bg-red-600/10"
+            >
+              <Trash2 className="size-4" /> Eliminar
+            </Button>
+          ) : !isSelf ? (
+            <form action={apagarUtilizador.bind(null, user.id)} className="col-span-2 rounded-2xl border border-red-600/25 bg-red-50/60 p-3">
+              <p className="text-[13px] text-red-800">
+                Apagar <strong>{user.nome}</strong>? O histórico assinado por ele é
+                preservado (autor passa a vazio).
+              </p>
+              <div className="mt-2 flex gap-2">
+                <Button type="submit" variant="danger" className="flex-1">
+                  Sim, apagar
+                </Button>
+                <Button type="button" variant="secondary" onClick={() => setAConfirmar(false)}>
+                  Cancelar
+                </Button>
+              </div>
+            </form>
+          ) : null}
+        </div>
+
+        {/* Dados do utilizador */}
+        <section className="rounded-2xl border border-ink-900/10 bg-white p-4">
+          <h4 className="text-[11px] font-bold uppercase tracking-[0.18em] text-ink-700/55">
+            Dados do utilizador
+          </h4>
+          <dl className="mt-2.5 flex flex-col gap-2 text-sm">
+            {[
+              { label: "Nome", value: user.nome },
+              { label: "Email", value: user.email },
+              { label: "Papel", value: user.role === "ADMIN" ? "ADMIN — gestão total" : "OPERADOR — operação diária" },
+              { label: "Estado", value: user.ativo ? "Ativo" : "Desativado" },
+              { label: "Criado por", value: `${criadoPor} · ${formatDataHora(user.createdAt)}` },
+            ].map((l) => (
+              <div key={l.label} className="flex items-start justify-between gap-3">
+                <dt className="shrink-0 text-ink-700/60">{l.label}</dt>
+                <dd className="text-right font-medium break-all text-ink-950">{l.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
 
         {/* Atividade */}
         <section className="rounded-2xl border border-ink-900/10 bg-white p-4">
@@ -211,13 +264,21 @@ function UserSheet({
             </ol>
           )}
         </section>
+      </div>
 
-        {/* Editar */}
-        <section className="rounded-2xl border border-ink-900/10 bg-white p-4">
-          <h4 className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-ink-700/55">
-            <Pencil className="size-3.5" /> Editar
-          </h4>
-          <form action={editarUtilizador.bind(null, user.id)} className="mt-3 grid gap-3">
+      {/* Modal de edição */}
+      <Modal
+        open={aEditar}
+        onClose={() => setAEditar(false)}
+        title="Editar utilizador"
+        subtitle={user.email}
+      >
+        <div className="flex flex-col gap-5">
+          <form
+            action={editarUtilizador.bind(null, user.id)}
+            onSubmit={() => setAEditar(false)}
+            className="grid gap-3"
+          >
             <div>
               <Label>Nome</Label>
               <Input name="nome" defaultValue={user.nome} required minLength={2} />
@@ -242,70 +303,35 @@ function UserSheet({
                 </label>
               </div>
             </div>
-            <Button type="submit" variant="outline">
+            <Button type="submit" size="lg" className="w-full">
               Guardar alterações
             </Button>
           </form>
-        </section>
-
-        {/* Palavra-passe */}
-        <section className="rounded-2xl border border-ink-900/10 bg-white p-4">
-          <h4 className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-ink-700/55">
-            <KeyRound className="size-3.5" /> Nova palavra-passe
-          </h4>
-          <form
-            action={redefinirPassword.bind(null, user.id)}
-            className="mt-3 flex items-end gap-2"
-          >
-            <div className="flex-1">
-              <PasswordInput
-                name="password"
-                required
-                minLength={8}
-                placeholder="Mín. 8 caracteres"
-                autoComplete="new-password"
-              />
-            </div>
-            <Button type="submit" variant="secondary">
-              Definir
-            </Button>
-          </form>
-        </section>
-
-        {/* Zona de perigo */}
-        {!isSelf && (
-          <section className="rounded-2xl border border-red-600/20 bg-red-50/60 p-4">
-            <h4 className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-red-700/80">
-              <Trash2 className="size-3.5" /> Zona de perigo
+          <div className="border-t border-ink-900/10 pt-4">
+            <h4 className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-ink-700/55">
+              <KeyRound className="size-3.5" /> Nova palavra-passe
             </h4>
-            {!aConfirmar ? (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setAConfirmar(true)}
-                className="mt-3 w-full !border-red-600/30 !text-red-700 hover:!bg-red-600/10"
-              >
-                Apagar utilizador
+            <form
+              action={redefinirPassword.bind(null, user.id)}
+              onSubmit={() => setAEditar(false)}
+              className="mt-3 flex items-end gap-2"
+            >
+              <div className="flex-1">
+                <PasswordInput
+                  name="password"
+                  required
+                  minLength={8}
+                  placeholder="Mín. 8 caracteres"
+                  autoComplete="new-password"
+                />
+              </div>
+              <Button type="submit" variant="secondary">
+                Definir
               </Button>
-            ) : (
-              <form action={apagarUtilizador.bind(null, user.id)} className="mt-3">
-                <p className="text-[13px] text-red-800">
-                  Apagar <strong>{user.nome}</strong>? O histórico assinado por ele é
-                  preservado (autor passa a vazio).
-                </p>
-                <div className="mt-2.5 flex gap-2">
-                  <Button type="submit" variant="danger" className="flex-1">
-                    Sim, apagar
-                  </Button>
-                  <Button type="button" variant="secondary" onClick={() => setAConfirmar(false)}>
-                    Cancelar
-                  </Button>
-                </div>
-              </form>
-            )}
-          </section>
-        )}
-      </div>
+            </form>
+          </div>
+        </div>
+      </Modal>
     </RightSheet>
   );
 }
