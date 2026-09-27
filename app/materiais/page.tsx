@@ -27,7 +27,8 @@ export default async function MateriaisPage() {
   if (!lista)
     return (
       <Card>
-        Falta <code>DATABASE_URL</code>. Ver <code>.env.example</code>.
+        Não foi possível carregar os materiais. Verifica a ligação à base de dados
+        (variável <code>DATABASE_URL</code>) e tenta de novo.
       </Card>
     );
   const db = requireDb();

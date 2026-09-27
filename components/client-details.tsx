@@ -3,7 +3,6 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   CalendarCheck,
-  ChevronRight,
   History,
   Pencil,
   Phone,
@@ -15,8 +14,9 @@ import {
 import type { AuditLog, Customer } from "@/lib/schema";
 import { apagarCliente, editarCliente } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
-import { Badge, Input } from "@/components/ui/primitives";
+import { Badge, Input, StatusBadge } from "@/components/ui/primitives";
 import { RightSheet } from "@/components/sheet";
+import { Modal } from "@/components/modal";
 import { ClientEditButton, ClientFields } from "@/components/client-form";
 import { ACAO_LABEL } from "@/components/signature";
 import { formatData, formatDataHora, formatKz } from "@/lib/format";
@@ -54,6 +54,7 @@ function ClientSheet({
   onClose: () => void;
 }) {
   const [aConfirmar, setAConfirmar] = useState(false);
+  const [aEditar, setAEditar] = useState(false);
 
   return (
     <RightSheet open onClose={onClose} title={customer.nome} subtitle={customer.telefone}>
@@ -81,10 +82,41 @@ function ClientSheet({
           </div>
         </div>
 
+        {/* Editar / Eliminar */}
+        <div className="grid grid-cols-2 gap-2">
+          <Button variant="outline" onClick={() => setAEditar(true)}>
+            <Pencil className="size-4" /> Editar
+          </Button>
+          {!aConfirmar ? (
+            <Button
+              variant="outline"
+              onClick={() => setAConfirmar(true)}
+              className="!border-red-600/30 !text-red-700 hover:!bg-red-600/10"
+            >
+              <Trash2 className="size-4" /> Eliminar
+            </Button>
+          ) : (
+            <form action={apagarCliente.bind(null, customer.id)} className="col-span-2 rounded-2xl border border-red-600/25 bg-red-50/60 p-3">
+              <p className="text-[13px] text-red-800">
+                Apagar <strong>{customer.nome}</strong> para sempre?
+                {resumo.eventos > 0 && " Tem alugueres — a eliminação será bloqueada."}
+              </p>
+              <div className="mt-2 flex gap-2">
+                <Button type="submit" variant="danger" className="flex-1">
+                  Sim, apagar
+                </Button>
+                <Button type="button" variant="secondary" onClick={() => setAConfirmar(false)}>
+                  Cancelar
+                </Button>
+              </div>
+            </form>
+          )}
+        </div>
+
         {/* Ações rápidas */}
         <div className="grid grid-cols-2 gap-2">
           <Link href={`/clientes/${customer.id}`}>
-            <Button variant="outline" className="w-full">
+            <Button variant="secondary" className="w-full">
               Ficha completa
             </Button>
           </Link>
@@ -95,10 +127,39 @@ function ClientSheet({
           </Link>
         </div>
 
-        {/* Resumo */}
+        {/* Dados do cliente */}
+        <section className="rounded-2xl border border-ink-900/10 bg-white p-4">
+          <h4 className="text-[11px] font-bold uppercase tracking-[0.18em] text-ink-700/55">
+            Dados do cliente
+          </h4>
+          <dl className="mt-2.5 flex flex-col gap-2 text-sm">
+            {[
+              { label: "Nome", value: customer.nome },
+              { label: "Telefone", value: customer.telefone },
+              { label: "BI", value: customer.bi ?? "—" },
+              { label: "Registado por", value: `${criadoPor} · ${formatDataHora(customer.createdAt)}` },
+              ...(editadoPor ? [{ label: "Editado por", value: editadoPor }] : []),
+            ].map((l) => (
+              <div key={l.label} className="flex items-start justify-between gap-3">
+                <dt className="shrink-0 text-ink-700/60">{l.label}</dt>
+                <dd className="text-right font-medium text-ink-950">{l.value}</dd>
+              </div>
+            ))}
+          </dl>
+          {customer.notas && (
+            <div className="mt-3 rounded-xl border border-gold-500/25 bg-gold-100/40 p-3">
+              <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-gold-600">
+                <StickyNote className="size-3.5" /> Notas
+              </p>
+              <p className="mt-1 whitespace-pre-wrap text-sm text-ink-900">{customer.notas}</p>
+            </div>
+          )}
+        </section>
+
+        {/* Resumo financeiro */}
         <section className="grid grid-cols-3 gap-2 text-center">
           {[
-            { label: "Eventos", value: String(resumo.eventos) },
+            { label: "Pedidos", value: String(resumo.eventos) },
             { label: "Contratado", value: formatKz(resumo.total) },
             { label: "Em dívida", value: formatKz(resumo.emDivida) },
           ].map((s) => (
@@ -109,50 +170,35 @@ function ClientSheet({
           ))}
         </section>
 
-        {/* Notas */}
-        {customer.notas && (
-          <section className="rounded-2xl border border-gold-500/25 bg-gold-100/40 p-4">
-            <h4 className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-gold-600">
-              <StickyNote className="size-3.5" /> Notas
-            </h4>
-            <p className="mt-1.5 whitespace-pre-wrap text-sm text-ink-900">{customer.notas}</p>
-          </section>
-        )}
-
-        {/* Assinatura */}
-        <p className="text-xs text-ink-700/60">
-          Registado por {criadoPor}
-          {editadoPor ? ` · editado por ${editadoPor}` : null} ·{" "}
-          {formatDataHora(customer.updatedAt)}
-        </p>
-
-        {/* Alugueres recentes */}
-        {resumo.recentes.length > 0 && (
-          <section className="rounded-2xl border border-ink-900/10 bg-white p-4">
-            <h4 className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-ink-700/55">
-              <CalendarCheck className="size-3.5" /> Alugueres recentes
-            </h4>
+        {/* Pedidos */}
+        <section className="rounded-2xl border border-ink-900/10 bg-white p-4">
+          <h4 className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-ink-700/55">
+            <CalendarCheck className="size-3.5" /> Pedidos ({resumo.eventos})
+          </h4>
+          {resumo.recentes.length === 0 ? (
+            <p className="mt-2 text-sm text-ink-700/60">Ainda sem alugueres.</p>
+          ) : (
             <div className="mt-2 flex flex-col">
               {resumo.recentes.map((a) => (
                 <Link
                   key={a.id}
                   href={`/alugueres/${a.id}`}
-                  className="flex items-center justify-between gap-3 border-b border-ink-900/8 py-2 text-sm last:border-0"
+                  className="flex items-center justify-between gap-3 border-b border-ink-900/8 py-2.5 text-sm last:border-0"
                 >
                   <span className="min-w-0">
                     <span className="block truncate font-medium text-ink-950">
                       {formatKz(a.total)}
                     </span>
                     <span className="block text-xs text-ink-700/55">
-                      {formatData(a.data)} · {a.status}
+                      Evento {formatData(a.data)}
                     </span>
                   </span>
-                  <ChevronRight className="size-4 shrink-0 text-ink-700/30" />
+                  <StatusBadge value={a.status} />
                 </Link>
               ))}
             </div>
-          </section>
-        )}
+          )}
+        </section>
 
         {/* Histórico */}
         {historico.length > 0 && (
@@ -173,55 +219,34 @@ function ClientSheet({
             </ol>
           </section>
         )}
-
-        {/* Editar */}
-        <section className="rounded-2xl border border-ink-900/10 bg-white p-4">
-          <h4 className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-ink-700/55">
-            <Pencil className="size-3.5" /> Editar
-          </h4>
-          <form action={editarCliente.bind(null, customer.id)} className="mt-3 grid gap-3 md:grid-cols-2">
-            <ClientFields customer={customer} />
-            <div className="md:col-span-2">
-              <Button type="submit" variant="outline" className="w-full">
-                Guardar alterações
-              </Button>
-            </div>
-          </form>
-        </section>
-
-        {/* Zona de perigo */}
-        <section className="rounded-2xl border border-red-600/20 bg-red-50/60 p-4">
-          <h4 className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-red-700/80">
-            <Trash2 className="size-3.5" /> Zona de perigo
-          </h4>
-          {!aConfirmar ? (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setAConfirmar(true)}
-              className="mt-3 w-full !border-red-600/30 !text-red-700 hover:!bg-red-600/10"
-            >
-              Apagar cliente
-            </Button>
-          ) : (
-            <form action={apagarCliente.bind(null, customer.id)} className="mt-3">
-              <p className="text-[13px] text-red-800">
-                Apagar <strong>{customer.nome}</strong> para sempre?
-                {resumo.eventos > 0 &&
-                  " Atenção: tem alugueres — a eliminação será bloqueada."}
-              </p>
-              <div className="mt-2.5 flex gap-2">
-                <Button type="submit" variant="danger" className="flex-1">
-                  Sim, apagar
-                </Button>
-                <Button type="button" variant="secondary" onClick={() => setAConfirmar(false)}>
-                  Cancelar
-                </Button>
-              </div>
-            </form>
-          )}
-        </section>
       </div>
+
+      {/* Modal de edição */}
+      <Modal
+        open={aEditar}
+        onClose={() => setAEditar(false)}
+        title="Editar cliente"
+        subtitle={customer.nome}
+      >
+        <form
+          action={editarCliente.bind(null, customer.id)}
+          onSubmit={() => {
+            setAEditar(false);
+            onClose();
+          }}
+          className="grid gap-3 md:grid-cols-2"
+        >
+          <ClientFields customer={customer} />
+          <div className="flex gap-2 md:col-span-2">
+            <Button type="submit" className="flex-1" size="lg">
+              Guardar alterações
+            </Button>
+            <Button type="button" variant="secondary" size="lg" onClick={() => setAEditar(false)}>
+              Cancelar
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </RightSheet>
   );
 }

@@ -2,11 +2,12 @@ import { requireDb } from "./db";
 import { auditLogs, customers, materials, rentalItems, rentals, users } from "./schema";
 import { desc, eq } from "drizzle-orm";
 
-/** Loaders que devolvem null quando a BD não está configurada (sem try/catch com JSX nas páginas). */
+/** Loaders que devolvem null quando a BD falha (a causa real vai para os logs do servidor). */
 export async function loadMaterials() {
   try {
     return await requireDb().select().from(materials).orderBy(materials.nome);
-  } catch {
+  } catch (e) {
+    console.error("[data] loadMaterials falhou:", e instanceof Error ? e.message : e);
     return null;
   }
 }
