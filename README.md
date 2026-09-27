@@ -8,16 +8,23 @@ Next.js Full Stack (App Router) + Drizzle + Neon Postgres + Auth.js v5 + PWA. UI
 2. **Env:**
    ```bash
    cp .env.example .env.local
-   # preenche DATABASE_URL, AUTH_SECRET (openssl rand -base64 32), ADMIN_EMAIL, ADMIN_PASSWORD
+   # preenche DATABASE_URL, AUTH_SECRET (openssl rand -base64 32)
    ```
-3. **Migrar + seed:**
+3. **Migrar + seed (primeiro admin via args):**
    ```bash
    npm install
    npm run db:migrate   # ou: npm run db:push (mais simples em dev)
-   npm run db:seed      # cria admin + materiais/clientes demo
+   npm run db:seed -- --email=mae@lk-aluguel.ao --password='SENHA_FORTE' --nome='Nome'
    npm run dev
    ```
-4. Abre http://localhost:3000 → redireciona para `/login`. Entra com o admin do seed.
+4. Abre http://localhost:3000 → redireciona para `/login`. Entra com o admin bootstrap.
+5. **Equipa:** como ADMIN, abre `/utilizadores` e cria os OPERADORes. Depois cria o admin definitivo e apaga o bootstrap.
+
+## Utilizadores e auditoria
+
+- Roles: `ADMIN` (tudo + gerir users em `/utilizadores`) e `OPERADOR` (operação diária).
+- Contas desativadas (`ativo=false`) não conseguem entrar.
+- Tudo fica assinado: `created_by / updated_by` em materiais, clientes e alugueres + tabela `audit_logs` (quem criou, editou, registou pagamento, mudou estado). O detalhe do aluguer mostra o histórico.
 
 ## Regras de negócio implementadas
 
@@ -35,7 +42,7 @@ Next.js Full Stack (App Router) + Drizzle + Neon Postgres + Auth.js v5 + PWA. UI
 | `npm run build` | build produção (usa `--webpack` por causa do PWA) |
 | `npm run db:generate` | gerar SQL a partir do schema |
 | `npm run db:migrate` / `db:push` | aplicar à BD |
-| `npm run db:seed` | admin + dados demo |
+| `npm run db:seed` | primeiro admin (via args) + dados demo |
 
 ## Deploy na Vercel
 
@@ -46,4 +53,4 @@ Next.js Full Stack (App Router) + Drizzle + Neon Postgres + Auth.js v5 + PWA. UI
 
 ## Fase 2 (por fazer)
 
-Sub-alugueres de terceiros, módulo de quebras com abate na caução, recibos PDF, multi-user com roles.
+Sub-alugueres de terceiros, módulo de quebras com abate na caução, recibos PDF.

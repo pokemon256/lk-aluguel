@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { loadMaterials } from "@/lib/data";
+import { loadMaterials, loadUserNames } from "@/lib/data";
 import { materialIcon } from "@/lib/material-icons";
 import { MaterialCreateButton, MaterialEditButton } from "@/components/material-form";
 import { Badge, Card, EmptyState, PageHeader } from "@/components/ui/primitives";
@@ -26,6 +26,7 @@ export default async function MateriaisPage() {
         Falta <code>DATABASE_URL</code>. Ver <code>.env.example</code>.
       </Card>
     );
+  const nomes = await loadUserNames();
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
@@ -55,6 +56,9 @@ export default async function MateriaisPage() {
                       </Badge>
                     )}
                     <span>Stock: <strong className="text-ink-900">{m.quantidadeTotal}</strong></span>
+                    {m.createdById && (
+                      <span>· por {nomes.get(m.createdById) ?? "—"}</span>
+                    )}
                   </p>
                 </div>
                 <p className="shrink-0 font-display text-lg font-semibold text-ink-950">

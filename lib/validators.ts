@@ -38,4 +38,17 @@ export const rentalSchema = z
     path: ["dataLevantamento"],
   });
 
+export const userCreateSchema = z.object({
+  nome: z.string().min(2, "Nome muito curto"),
+  email: z.string().email("Email inválido"),
+  password: z.string().min(8, "Mínimo 8 caracteres"),
+  role: z.enum(["ADMIN", "OPERADOR"]).default("OPERADOR"),
+});
+
+export const userUpdateSchema = z.object({
+  nome: z.string().min(2, "Nome muito curto"),
+  role: z.enum(["ADMIN", "OPERADOR"]),
+  ativo: z.coerce.boolean(),
+});
+
 export type RentalInput = z.infer<typeof rentalSchema>;

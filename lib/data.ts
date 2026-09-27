@@ -1,5 +1,5 @@
 import { requireDb } from "./db";
-import { customers, materials, rentalItems, rentals } from "./schema";
+import { auditLogs, customers, materials, rentalItems, rentals, users } from "./schema";
 import { desc, eq } from "drizzle-orm";
 
 /** Loaders que devolvem null quando a BD não está configurada (sem try/catch com JSX nas páginas). */
@@ -41,6 +41,31 @@ export async function loadCalendar() {
   }
 }
 
+/** Mapa id → nome para assinar "criado por / editado por" sem N+1 nas páginas. */
+export async function loadUserNames(): Promise<Map<string, string>> {
+  try {
+    const us = await requireDb().select({ id: users.id, nome: users.nome }).from(users);
+    return new Map(us.map((u) => [u.id, u.nome]));
+  } catch {
+    return new Map();
+  }
+}
+
+/** Histórico de auditoria de uma entidade (ex: rentals + id). */
+export async function loadAudit(entidade: string, entidadeId: string, limit = 20) {
+  try {
+    const db = requireDb();
+    return await db
+      .select()
+      .from(auditLogs)
+      .where(eq(auditLogs.entidade, entidade))
+      .orderBy(desc(auditLogs.at))
+      .limit(200)
+      .then((rows) => rows.filter((r) => r.entidadeId === entidadeId).slice(0, limit));
+  } catch {
+    return [];
+  }
+}
 /** Tudo o que Análises e Finanças precisam (volumes pequenos nesta fase do negócio). */
 export async function loadAnalyticsData() {
   try {

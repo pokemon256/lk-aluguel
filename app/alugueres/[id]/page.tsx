@@ -6,6 +6,8 @@ import { eq } from "drizzle-orm";
 import { requireDb } from "@/lib/db";
 import { customers, materials, rentalItems, rentals } from "@/lib/schema";
 import { mudarStatusAluguer, registarPagamento } from "@/lib/actions";
+import { loadAudit, loadUserNames } from "@/lib/data";
+import { Historico } from "@/components/signature";
 import { Card, Input, Label, StatusBadge } from "@/components/ui/primitives";
 import { formatDataHora, formatKz } from "@/lib/format";
 import { Button } from "@/components/ui/button";
@@ -38,6 +40,7 @@ export default async function AluguerDetalhe({ params }: { params: Promise<{ id:
   const items = await db.select().from(rentalItems).where(eq(rentalItems.rentalId, id));
   const mats = await db.select().from(materials);
   const nomeMat = new Map(mats.map((m) => [m.id, m.nome]));
+  const [nomes, logs] = await Promise.all([loadUserNames(), loadAudit("rentals", id)]);
 
   return (
     <div className="flex flex-col gap-5">
@@ -80,6 +83,12 @@ export default async function AluguerDetalhe({ params }: { params: Promise<{ id:
           Pagamento: <StatusBadge value={r.statusPagamento} className="border border-white/25 bg-white/15 !text-white" />
         </div>
         {r.observacoes && <p className="mt-3 text-sm text-white/75">Obs: {r.observacoes}</p>}
+        <p className="mt-2 text-xs text-white/65">
+          Registado por {r.createdById ? (nomes.get(r.createdById) ?? "—") : "—"}
+          {r.updatedById && r.updatedById !== r.createdById
+            ? ` · última edição por ${nomes.get(r.updatedById) ?? "—"}`
+            : null}
+        </p>
 
         <div className="mt-5 flex flex-wrap gap-2">
           {r.status === "PENDENTE" && (
@@ -153,6 +162,8 @@ export default async function AluguerDetalhe({ params }: { params: Promise<{ id:
           ))}
         </div>
       </Card>
+
+      <Historico logs={logs} />
     </div>
   );
 }

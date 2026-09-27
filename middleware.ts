@@ -10,5 +10,6 @@ export const config = {
     "/calendario/:path*",
     "/analises/:path*",
     "/financas/:path*",
+    "/utilizadores/:path*",
   ],
 };

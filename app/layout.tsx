@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Fraunces, Inter } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "@/components/app-shell";
+import { auth } from "@/auth";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 const fraunces = Fraunces({ subsets: ["latin"], variable: "--font-display" });
@@ -19,7 +20,11 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const s = await auth().catch(() => null);
+  const user = s?.user
+    ? { nome: s.user.name ?? s.user.email ?? "Utilizador", role: s.user.role }
+    : null;
   return (
     <html lang="pt-AO" className="h-full">
       <body className={`${inter.variable} ${fraunces.variable} min-h-full antialiased`}>
@@ -28,7 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="absolute -top-32 left-1/2 h-96 w-[42rem] -translate-x-1/2 rounded-full bg-brand-200/50 blur-3xl" />
           <div className="absolute top-40 -right-32 h-72 w-72 rounded-full bg-gold-200/40 blur-3xl" />
         </div>
-        <AppShell>{children}</AppShell>
+        <AppShell user={user}>{children}</AppShell>
       </body>
     </html>
   );

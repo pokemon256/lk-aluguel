@@ -7,22 +7,51 @@ import { eq } from "drizzle-orm";
 import { requireDb } from "../lib/db";
 import { customers, materials, users } from "../lib/schema";
 
+function arg(name: string): string | undefined {
+  const p = `--${name}=`;
+  return process.argv.find((a) => a.startsWith(p))?.slice(p.length);
+}
+
+/**
+ * Seed bootstrap: cria o PRIMEIRO admin só via args e só se a tabela users estiver vazia.
+ * Uso: npm run db:seed -- --email=mae@lk-aluguel.ao --password='...' --nome='Nome'
+ * Depois disso, os restantes users são criados no painel /utilizadores (só ADMIN).
+ */
 async function main() {
   const db = requireDb();
-  const email = (process.env.ADMIN_EMAIL ?? "mae@lk-aluguel.ao").toLowerCase();
-  const password = process.env.ADMIN_PASSWORD ?? "lk123456";
-  const nome = process.env.ADMIN_NOME ?? "LK Aluguel";
 
-  const [exists] = await db.select().from(users).where(eq(users.email, email));
-  if (!exists) {
+  const existentes = await db.select({ id: users.id }).from(users).limit(1);
+  if (existentes.length === 0) {
+    const email = arg("email")?.toLowerCase();
+    const password = arg("password");
+    const nome = arg("nome") ?? "Administração";
+    if (!email || !password) {
+      console.error(
+        "Sem utilizadores na BD. Corre: npm run db:seed -- --email=EMAIL --password='SENHA_FORTE' [--nome='Nome']"
+      );
+      process.exit(1);
+    }
+    if (password.length < 8) {
+      console.error("A palavra-passe do bootstrap deve ter pelo menos 8 caracteres.");
+      process.exit(1);
+    }
     await db.insert(users).values({
       email,
       nome,
+      role: "ADMIN",
+      ativo: true,
       passwordHash: await bcrypt.hash(password, 10),
     });
-    console.log(`✔ Admin criado: ${email}`);
+    console.log(`✔ Admin bootstrap criado: ${email}`);
   } else {
-    console.log(`✔ Admin já existe: ${email}`);
+    console.log("✔ Tabela users já tem utilizadores — bootstrap ignorado.");
+    // Permite promover/corrigir via args explícitos sem .env:
+    const email = arg("email")?.toLowerCase();
+    if (email) {
+      const [u] = await db.select().from(users).where(eq(users.email, email));
+      if (u) console.log(`ℹ Utilizador já existe: ${email} (${u.role})`);
+      else console.log(`ℹ Para criar mais users usa o painel /utilizadores como ADMIN.`);
+    }
   }
 
   const mats = await db.select().from(materials);

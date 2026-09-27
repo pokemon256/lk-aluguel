@@ -2,7 +2,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { Phone } from "lucide-react";
-import { loadCustomers } from "@/lib/data";
+import { loadCustomers, loadUserNames } from "@/lib/data";
 import { ClientCreateButton, ClientEditButton } from "@/components/client-form";
 import { Card, EmptyState, PageHeader } from "@/components/ui/primitives";
 
@@ -25,6 +25,7 @@ export default async function ClientesPage() {
         Falta <code>DATABASE_URL</code>. Ver <code>.env.example</code>.
       </Card>
     );
+  const nomes = await loadUserNames();
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
@@ -49,6 +50,11 @@ export default async function ClientesPage() {
                     <Phone className="size-3.5" /> {c.telefone}
                   </span>
                   {c.notas && <p className="mt-0.5 truncate text-xs text-ink-700/60">{c.notas}</p>}
+                  {c.createdById && (
+                    <p className="mt-0.5 text-[11px] text-ink-700/55">
+                      Registado por {nomes.get(c.createdById) ?? "—"}
+                    </p>
+                  )}
                 </div>
               </Link>
               {c.bi && (

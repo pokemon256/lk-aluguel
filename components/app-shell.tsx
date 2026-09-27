@@ -3,6 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
+  BellRing,
   CalendarDays,
   CalendarCheck,
   ChartColumn,
@@ -11,39 +12,17 @@ import {
   Menu,
   Package,
   PartyPopper,
+  ShieldCheck,
   Users,
   Wallet,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RouteLoader } from "@/components/route-loader";
+import { signOut } from "next-auth/react";
+import { Bell } from "@/components/bell";
+import { PushSync } from "@/components/push-toggle";
 
-const sections = [
-  {
-    title: "Principal",
-    links: [
-      { href: "/", label: "Painel", icon: LayoutDashboard },
-      { href: "/alugueres", label: "Alugueres", icon: CalendarCheck },
-      { href: "/calendario", label: "Calendário", icon: CalendarDays },
-    ],
-  },
-  {
-    title: "Gestão",
-    links: [
-      { href: "/materiais", label: "Materiais", icon: Package },
-      { href: "/clientes", label: "Clientes", icon: Users },
-    ],
-  },
-  {
-    title: "Negócio",
-    links: [
-      { href: "/analises", label: "Análises", icon: ChartColumn },
-      { href: "/financas", label: "Finanças", icon: Wallet },
-    ],
-  },
-];
-
-const allLinks = sections.flatMap((s) => s.links);
 const mobileTabs = [
   { href: "/", label: "Painel", icon: LayoutDashboard },
   { href: "/alugueres", label: "Alugueres", icon: CalendarCheck },
@@ -71,19 +50,55 @@ function Brand() {
   );
 }
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  children,
+  user,
+}: {
+  children: React.ReactNode;
+  user?: { nome: string; role: string } | null;
+}) {
   const path = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   if (path === "/login") return <>{children}</>;
-  const maisActive = ["/materiais", "/clientes", "/analises"].some((h) => isActive(path, h));
+  const isAdmin = user?.role === "ADMIN";
+  const maisActive = ["/materiais", "/clientes", "/analises", "/utilizadores"].some((h) => isActive(path, h));
+  const sections = [
+    {
+      title: "Principal",
+      links: [
+        { href: "/", label: "Painel", icon: LayoutDashboard },
+        { href: "/alugueres", label: "Alugueres", icon: CalendarCheck },
+        { href: "/calendario", label: "Calendário", icon: CalendarDays },
+        { href: "/notificacoes", label: "Notificações", icon: BellRing },
+      ],
+    },
+    {
+      title: "Gestão",
+      links: [
+        { href: "/materiais", label: "Materiais", icon: Package },
+        { href: "/clientes", label: "Clientes", icon: Users },
+      ],
+    },
+    {
+      title: "Negócio",
+      links: [
+        { href: "/analises", label: "Análises", icon: ChartColumn },
+        { href: "/financas", label: "Finanças", icon: Wallet },
+        ...(isAdmin ? [{ href: "/utilizadores", label: "Utilizadores", icon: ShieldCheck }] : []),
+      ],
+    },
+  ];
+  const allLinks = sections.flatMap((s) => s.links);
 
   return (
     <>
       <RouteLoader />
+      <PushSync />
       {/* Sidebar — desktop */}
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col bg-ink-950 text-cream-50 md:flex">
-        <div className="px-6 pb-2 pt-7 text-cream-50">
+        <div className="flex items-center justify-between px-6 pb-2 pt-7 text-cream-50">
           <Brand />
+          <Bell dark />
         </div>
         <nav className="flex flex-1 flex-col gap-5 overflow-y-auto px-3 py-6">
           {sections.map((sec) => (
@@ -124,11 +139,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               Confirma as devoluções de hoje antes de fechar.
             </p>
           </div>
-          <form action="/api/auth/signout" method="post" className="mt-3">
-            <button className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-cream-50/65 transition-colors hover:bg-white/5 hover:text-cream-50 cursor-pointer">
-              <LogOut className="size-[18px]" /> Terminar sessão
-            </button>
-          </form>
+          {user && (
+            <div className="mt-3 flex items-center gap-3 rounded-xl px-3.5 py-2.5 ring-1 ring-white/10 bg-white/5">
+              <span className="grid size-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-xs font-bold text-white">
+                {user.nome.slice(0, 1).toUpperCase()}
+              </span>
+              <span className="min-w-0 flex-1 leading-tight">
+                <span className="block truncate text-[13px] font-semibold text-cream-50">{user.nome}</span>
+                <span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-gold-300">{user.role}</span>
+              </span>
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-cream-50/65 transition-colors hover:bg-white/5 hover:text-cream-50 cursor-pointer"
+          >
+            <LogOut className="size-[18px]" /> Terminar sessão
+          </button>
         </div>
       </aside>
 
@@ -136,11 +164,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-30 border-b border-ink-900/10 bg-cream-50/85 backdrop-blur-md md:hidden">
         <div className="flex items-center justify-between px-4 py-3 text-ink-900">
           <Brand />
-          <form action="/api/auth/signout" method="post">
-            <button aria-label="Terminar sessão" className="grid size-9 place-items-center rounded-full bg-ink-900/5 text-ink-800 cursor-pointer">
+          <div className="flex items-center gap-2">
+            <Bell />
+            <button
+              type="button"
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              aria-label="Terminar sessão"
+              className="grid size-9 place-items-center rounded-full bg-ink-900/5 text-ink-800 cursor-pointer"
+            >
               <LogOut className="size-4" />
             </button>
-          </form>
+          </div>
         </div>
       </header>
 
@@ -221,6 +255,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   </Link>
                 );
               })}
+              <button
+                type="button"
+                onClick={() => signOut({ callbackUrl: "/login" })}
+                className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-ink-900 hover:bg-ink-900/5 cursor-pointer"
+              >
+                <LogOut className="size-5" />
+                Terminar sessão
+              </button>
             </div>
           </div>
         </div>
