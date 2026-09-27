@@ -22,23 +22,23 @@ for (const [key, entry] of Object.entries(MATERIAL_ICONS)) {
 
 function QtyStepper({ value, max, onChange }: { value: number; max: number; onChange: (v: number) => void }) {
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-1.5">
       <button
         type="button"
         aria-label="Diminuir"
         onClick={() => onChange(Math.max(1, value - 1))}
-        className="grid size-8 place-items-center rounded-full bg-ink-900/5 text-ink-800 hover:bg-ink-900/10 cursor-pointer"
+        className="grid size-9 place-items-center rounded-full bg-ink-900/5 text-ink-800 transition-colors hover:bg-ink-900/10 active:scale-95 cursor-pointer"
       >
-        <Minus className="size-3.5" />
+        <Minus className="size-4" />
       </button>
-      <span className="w-8 text-center text-sm font-bold tabular-nums">{value}</span>
+      <span className="w-9 text-center text-sm font-bold tabular-nums">{value}</span>
       <button
         type="button"
         aria-label="Aumentar"
         onClick={() => onChange(Math.min(max, value + 1))}
-        className="grid size-8 place-items-center rounded-full bg-ink-900/5 text-ink-800 hover:bg-ink-900/10 cursor-pointer"
+        className="grid size-9 place-items-center rounded-full bg-ink-900/5 text-ink-800 transition-colors hover:bg-ink-900/10 active:scale-95 cursor-pointer"
       >
-        <Plus className="size-3.5" />
+        <Plus className="size-4" />
       </button>
     </div>
   );
@@ -63,36 +63,43 @@ function PickerRow({
   const esgotado = max <= 0;
 
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-ink-900/10 bg-white p-3">
-      <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-cream-100 text-ink-700">
-        <Icon className="size-5" />
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-ink-950">{material.nome}</p>
-        <p className="mt-1 flex flex-wrap items-center gap-1.5">
-          <Badge className="bg-cream-100 text-ink-700 ring-ink-900/10">{material.categoria}</Badge>
-          {disp ? (
-            esgotado ? (
-              <Badge className="bg-red-50 text-red-700 ring-red-600/30">Esgotado · stock {material.quantidadeTotal}</Badge>
+    <div className="flex flex-col gap-3 rounded-2xl border border-ink-900/10 bg-white p-3.5 sm:flex-row sm:items-center">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-cream-100 text-ink-700">
+          <Icon className="size-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-ink-950">{material.nome}</p>
+          <p className="mt-1 flex flex-wrap items-center gap-1.5">
+            <Badge className="bg-cream-100 text-[11px] text-ink-700 ring-ink-900/10">{material.categoria}</Badge>
+            {disp ? (
+              esgotado ? (
+                <Badge className="bg-red-50 text-[11px] text-red-700 ring-red-600/30">Esgotado · stock {material.quantidadeTotal}</Badge>
+              ) : (
+                <Badge className="bg-emerald-50 text-[11px] text-emerald-800 ring-emerald-600/25">
+                  {disp.disponivel} livres · stock {material.quantidadeTotal}
+                </Badge>
+              )
             ) : (
-              <Badge className="bg-emerald-50 text-emerald-800 ring-emerald-600/25">
-                {disp.disponivel} livres · stock {material.quantidadeTotal}
-              </Badge>
-            )
-          ) : (
-            <Badge className="bg-cream-100 text-ink-700 ring-ink-900/10">Stock {material.quantidadeTotal}</Badge>
-          )}
-        </p>
+              <Badge className="bg-cream-100 text-[11px] text-ink-700 ring-ink-900/10">Stock {material.quantidadeTotal}</Badge>
+            )}
+          </p>
+        </div>
       </div>
       {linha ? (
-        <div className="flex shrink-0 items-center gap-2">
-          <span className="hidden text-[11px] font-bold uppercase tracking-wide text-emerald-700 sm:block">Na lista</span>
+        <div className="flex items-center justify-between gap-2 border-t border-ink-900/8 pt-3 sm:justify-end sm:border-0 sm:pt-0">
+          <span className="text-[11px] font-bold uppercase tracking-wide text-emerald-700">Na lista</span>
           <QtyStepper value={linha.quantidade} max={Math.max(max, linha.quantidade)} onChange={onUpdateQty} />
         </div>
       ) : (
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex items-center justify-between gap-2 border-t border-ink-900/8 pt-3 sm:justify-end sm:border-0 sm:pt-0">
           {!esgotado && <QtyStepper value={qty} max={Math.max(1, max)} onChange={setQty} />}
-          <Button size="sm" disabled={esgotado} onClick={() => onAdd(Math.min(qty, Math.max(1, max)))}>
+          <Button
+            size="sm"
+            disabled={esgotado}
+            onClick={() => onAdd(Math.min(qty, Math.max(1, max)))}
+            className="min-h-9 flex-1 sm:flex-none"
+          >
             {esgotado ? "Esgotado" : "Adicionar"}
           </Button>
         </div>

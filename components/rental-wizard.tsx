@@ -220,7 +220,7 @@ function RentalForm({
             const d = dispById.get(l.materialId);
             return (
               <div key={l.materialId} className="grid grid-cols-2 items-end gap-3 rounded-2xl border border-ink-900/10 bg-cream-50/60 p-3.5 md:grid-cols-[1fr_110px_140px_auto]">
-                <div>
+                <div className="col-span-2 md:col-span-1">
                   <p className="text-sm font-semibold text-ink-950">{m.nome}</p>
                   <p className="text-xs text-ink-700/60">
                     {d ? `${d.disponivel} livres · stock ${m.quantidadeTotal}` : `Stock: ${m.quantidadeTotal}`}
@@ -247,7 +247,7 @@ function RentalForm({
                     }
                   />
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => setLinhas(linhas.filter((_, j) => j !== i))}>
+                <Button variant="ghost" size="sm" onClick={() => setLinhas(linhas.filter((_, j) => j !== i))} className="col-span-2 md:col-span-1">
                   Remover
                 </Button>
               </div>
